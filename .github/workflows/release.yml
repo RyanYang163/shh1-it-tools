@@ -79,7 +79,9 @@ jobs:
           curl -fsSL "https://codeload.github.com/${UPSTREAM_REPO}/tar.gz/refs/tags/${UPSTREAM_TAG}" -o /tmp/up.tgz
           mkdir -p /tmp/up && tar -xzf /tmp/up.tgz -C /tmp/up --strip-components=1
           cd /tmp/up
-          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          # 上游 lockfile 存在 peer 依赖冲突（@tiptap/vue-3 要求 @tiptap/pm ^2.0.0，
+          # 而解析到的 @tiptap/core 要求 ^2.7.0），必须放宽 peer 校验才能装上
+          npm ci --no-audit --no-fund --legacy-peer-deps             || npm install --no-audit --no-fund --legacy-peer-deps
           npm run build || npx vite build
           [ -d dist ] || { echo "::error::上游构建未产出 dist/"; exit 1; }
           rm -rf "${GITHUB_WORKSPACE}/webui"
