@@ -19,6 +19,13 @@ on:
 permissions:
   contents: write
 
+env:
+  # 上游版本锁定 —— 升级时改这里，不要用 floating 分支
+  UPSTREAM_REPO: "CorentinTh/it-tools"
+  UPSTREAM_TAG: "v2024.10.22-7ca5933"
+  # 产物是纯静态前端（true）还是自带二进制（false）
+  BUILD_FROM_UPSTREAM: "npm"
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -66,6 +73,27 @@ jobs:
             tar -cjf webui.bz2 -C webui/ .
             echo "已由 webui/ 生成 webui.bz2"
           fi
+
+      - uses: actions/setup-node@v4
+        if: env.BUILD_FROM_UPSTREAM == 'npm'
+        with:
+          node-version: "20"
+
+      - name: 拉取上游源码并构建前端
+        if: env.BUILD_FROM_UPSTREAM == 'npm'
+        run: |
+          set -euo pipefail
+          # github.com 的 git 协议在部分网络下不可用，统一走 codeload 归档
+          curl -fsSL "https://codeload.github.com/${UPSTREAM_REPO}/tar.gz/refs/tags/${UPSTREAM_TAG}" -o /tmp/up.tgz
+          mkdir -p /tmp/up && tar -xzf /tmp/up.tgz -C /tmp/up --strip-components=1
+          cd /tmp/up
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          npm run build || npx vite build
+          [ -d dist ] || { echo "::error::上游构建未产出 dist/"; exit 1; }
+          rm -rf "${GITHUB_WORKSPACE}/webui"
+          mkdir -p "${GITHUB_WORKSPACE}/webui"
+          cp -r dist/. "${GITHUB_WORKSPACE}/webui/"
+          echo "前端产物已就位：$(du -sh "${GITHUB_WORKSPACE}/webui" | cut -f1)"
 
       - name: 构建 Deb 包
         run: |
