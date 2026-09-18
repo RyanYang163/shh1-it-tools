@@ -21,10 +21,10 @@ permissions:
 
 env:
   # 上游版本锁定 —— 升级时改这里，不要用 floating 分支
-  UPSTREAM_REPO: "CorentinTh/it-tools"
-  UPSTREAM_TAG: "v2024.10.22-7ca5933"
+  UPSTREAM_REPO: "corentinth/it-tools"
+  UPSTREAM_TAG: "2024.10.22-7ca5933"
   # 产物是纯静态前端（true）还是自带二进制（false）
-  BUILD_FROM_UPSTREAM: "npm"
+  BUILD_FROM_UPSTREAM: "dockerimg"
 
 jobs:
   release:
@@ -66,27 +66,26 @@ jobs:
           fi
           echo "Release $TAG 尚不存在，可以继续。"
 
-      - uses: actions/setup-node@v4
-        if: env.BUILD_FROM_UPSTREAM == 'npm'
-        with:
-          node-version: "20"
-
-      - name: 拉取上游源码并构建前端
-        if: env.BUILD_FROM_UPSTREAM == 'npm'
+      - name: 从官方镜像提取已构建前端
+        if: env.BUILD_FROM_UPSTREAM == 'dockerimg'
         run: |
           set -euo pipefail
-          # github.com 的 git 协议在部分网络下不可用，统一走 codeload 归档
-          curl -fsSL "https://codeload.github.com/${UPSTREAM_REPO}/tar.gz/refs/tags/${UPSTREAM_TAG}" -o /tmp/up.tgz
-          mkdir -p /tmp/up && tar -xzf /tmp/up.tgz -C /tmp/up --strip-components=1
-          cd /tmp/up
-          # 上游 lockfile 存在 peer 依赖冲突（@tiptap/vue-3 要求 @tiptap/pm ^2.0.0，
-          # 而解析到的 @tiptap/core 要求 ^2.7.0），必须放宽 peer 校验才能装上
-          npm ci --no-audit --no-fund --legacy-peer-deps             || npm install --no-audit --no-fund --legacy-peer-deps
-          npm run build || npx vite build
-          [ -d dist ] || { echo "::error::上游构建未产出 dist/"; exit 1; }
+          # 上游使用 pnpm 而非 npm，且 lockfile 存在 peer 冲突，本地构建不可靠。
+          # 改为直接取官方镜像里已构建好的静态产物（Dockerfile 中
+          # COPY --from=build-stage /app/dist /usr/share/nginx/html）。
+          IMG="${UPSTREAM_REPO}:${UPSTREAM_TAG}"
+          echo "拉取镜像 $IMG"
+          docker pull "$IMG"
+          CID=$(docker create "$IMG")
           rm -rf "${GITHUB_WORKSPACE}/webui"
           mkdir -p "${GITHUB_WORKSPACE}/webui"
-          cp -r dist/. "${GITHUB_WORKSPACE}/webui/"
+          if ! docker cp "$CID:/usr/share/nginx/html/." "${GITHUB_WORKSPACE}/webui/" 2>/dev/null; then
+            echo "::error::镜像内未找到 /usr/share/nginx/html"
+            docker rm -f "$CID" || true
+            exit 1
+          fi
+          docker rm -f "$CID" >/dev/null
+          [ -f "${GITHUB_WORKSPACE}/webui/index.html" ] || { echo "::error::提取结果缺少 index.html"; exit 1; }
           echo "前端产物已就位：$(du -sh "${GITHUB_WORKSPACE}/webui" | cut -f1)"
 
       - name: 构建 Deb 包
