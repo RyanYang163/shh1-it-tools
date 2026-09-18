@@ -1,0 +1,97 @@
+[en-us]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[zh-cn]
+name = "IT-Tools"
+auth = "shh"
+descript = "面向开发者的在线工具箱：JSON 格式化、Base64、UUID、哈希、时间戳、正则测试等 80 余项。"
+release_note = "1. 首次发布。"
+important = "需要 TOS 7.0 或更高版本。"
+
+[zh-hk]
+name = "IT-Tools"
+auth = "shh"
+descript = "面向开发者的在线工具箱：JSON 格式化、Base64、UUID、哈希、时间戳、正则测试等 80 余项。"
+release_note = "1. 首次發佈。"
+important = "需要 TOS 7.0 或更高版本。"
+
+[fr-fr]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[de-de]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[it-it]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[es-es]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[hu-hu]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[ja-jp]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[ko-kr]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[pl-pl]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[ru-ru]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[tr-tr]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."
+
+[pt-pt]
+name = "IT-Tools"
+auth = "shh"
+descript = "A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more."
+release_note = "1. Initial release."
+important = "Requires TOS 7.0 or later."

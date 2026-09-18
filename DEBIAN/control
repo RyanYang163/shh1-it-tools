@@ -1,0 +1,9 @@
+Package: shh1-it-tools
+Version: 1.0.0
+Architecture: amd64
+Section: utils
+Priority: optional
+Maintainer: shh <shh@users.noreply.github.com>
+Depends: systemd, nginx
+Description: IT-Tools
+ A collection of handy online tools for developers: JSON, Base64, UUID, hashes, timestamps and more.
