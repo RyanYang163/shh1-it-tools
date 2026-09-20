@@ -1,0 +1,9 @@
+{
+  "name": "IT-Tools",
+  "license": "GPL-3.0",
+  "port": 18801,
+  "license_url": "https://raw.githubusercontent.com/CorentinTh/it-tools/main/LICENSE",
+  "en": "A collection of handy online tools for developers: JSON formatting, Base64, UUID, hashes, timestamps and more.",
+  "features": "- 80+ developer utilities in one page\n- Runs fully in the browser; no server-side processing\n- No database, no user accounts, no data collection",
+  "date": "2026-09-20"
+}
