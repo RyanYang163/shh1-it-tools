@@ -86,6 +86,16 @@ jobs:
           fi
           docker rm -f "$CID" >/dev/null
           [ -f "${GITHUB_WORKSPACE}/webui/index.html" ] || { echo "::error::提取结果缺少 index.html"; exit 1; }
+
+          # ⚠️ 审核项 F7：Vite 默认输出绝对路径 /assets/…，
+          # 在反代前缀 /<app_id>/ 下会 404。改为相对路径。
+          cd "${GITHUB_WORKSPACE}/webui"
+          sed -i 's|="/assets/|="./assets/|g; s|="/favicon|="./favicon|g; s|="/manifest|="./manifest|g; s|="/sw.js|="./sw.js|g' index.html
+          sed -i "s|'/assets/|'./assets/|g" index.html
+          # service worker 里也可能有绝对路径
+          [ -f sw.js ] && sed -i 's|"/assets/|"./assets/|g; s|"/index.html|"./index.html|g' sw.js || true
+          echo "  已改为相对路径，index.html 片段："
+          grep -oE '(src|href)="[^"]*"' index.html | head -6 || true
           echo "前端产物已就位：$(du -sh "${GITHUB_WORKSPACE}/webui" | cut -f1)"
 
       - name: 构建 Deb 包

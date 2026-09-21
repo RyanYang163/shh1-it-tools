@@ -1,75 +1,45 @@
 # IT-Tools
 
-> TOS 7 application package for **IT-Tools** — platform integration only.
-> The application itself is provided by the upstream project, unmodified.
-
-## Overview
-
-A collection of handy online tools for developers: JSON formatting, Base64, UUID, hashes, timestamps and more.
-
-上游项目 / Upstream: <https://github.com/CorentinTh/it-tools>
-上游许可证 / License: **GPL-3.0**
-
-## Features
-
-- 80+ developer utilities in one page
-- Runs fully in the browser; no server-side processing
-- No database, no user accounts, no data collection
-
-## Installation
-
-1. Requirements: TOS 7.0+ and systemd + nginx
-2. Install from the TOS App Center
-3. Open the app and complete initial configuration
-
-## Usage
-
-1. Access URL: `/shh1-it-tools/`
-2. Default credentials: see upstream documentation
-3. Key settings: see upstream documentation
-
-## Permissions
-
-| Permission | Rationale |
+| 项 | 值 |
 |---|---|
-| Network: port 18801 | Web UI access |
-| File system: `/Volume*/DockerAppData/shh1-it-tools/` | Application data persistence |
-| User: shh1ittools | Isolated non-root service execution |
+| 应用 ID | `shh1-it-tools` |
+| 形态 | Deb 应用（单包模式） · WebUI 内嵌（iframe） |
+| 版本 | 1.0.0 |
+| 上游项目 | https://github.com/CorentinTh/it-tools |
+| 上游许可证 | GPL-3.0 |
+| 宿主端口 | 18801 |
 
-## Configuration
+## 简介
 
-See `config.ini` for platform metadata; see `docker-compose.yml` for runtime configuration.
+面向开发者的在线工具箱：JSON 格式化、Base64、UUID、哈希、时间戳、正则测试等 80 余项。
 
-## Ports
+## 打包
 
-| Port | Protocol | Purpose |
-|---|---|---|
-| 18801 | TCP | Web UI (IT-Tools) |
+```bash
+./build.sh                # 默认 x86_64
+./build.sh aarch64        # ARM（Deb 应用）
+```
 
-## Support
+产物在 `build/output/`，同级生成 `<包名>.sha256`。
 
-- Documentation: https://github.com/CorentinTh/it-tools
-- Issue tracker: https://github.com/CorentinTh/it-tools/issues
-- Community: https://github.com/CorentinTh/it-tools
+## 提交前必办事项
 
-## Security & Compliance
+- 上游为纯静态 SPA，构建产物放入 webui/ 后由 build.sh 打包为 webui.bz2。
+- 替换 webui/index.html 为上游 `npm run build` 的 dist 内容即可。
+- 本应用无数据库、无后端，是 9 个应用中最容易过审的一个。
+- [ ] 真机安装、启动、停止、卸载残留四项实测
+- [ ] 首屏加载 ≤ 5 秒（指引 H10）
+- [ ] x86_64 与 aarch64 分别构建并测试（指引 H7）
+- [ ] 提交前跑一遍指引 13.9 上架前自查清单
 
-- **License**: GPL-3.0 — full text in [`LICENSE`](./LICENSE)
-- **Attribution**: see [`NOTICE`](./NOTICE)
-- **Privacy Policy**: see [`PRIVACY.md`](./PRIVACY.md)
-- **Vulnerability scan**: `trivy-report.txt` attached to each Release (HIGH/CRITICAL must be 0)
-- Runs as a non-root dedicated user; no privileged mode, no host network
+## 隐私政策
 
-## Changelog
+见 [PRIVACY.md](./PRIVACY.md)（对应审核项 C3–C8）。
 
-### v1.0.1 (2026-09-20)
-- Compliance update: added LICENSE / NOTICE / PRIVACY materials,
-  declared upstream license inside the package, added container healthcheck
+## 许可证与出处
 
-### v1.0.0
-- Initial release
+本仓库**仅包含 TOS 平台集成所需的配置文件与打包脚本**，应用本体的源码与二进制来自上游项目：https://github.com/CorentinTh/it-tools
 
-## License
+上游许可证：**%s**。本封装保留上游许可证声明，未修改上游代码（Deb 形态下按上游许可证要求随包提供 LICENSE）。
 
-**GPL-3.0** — this packaging repository is distributed under the same license as the
-upstream project. Full text: [`LICENSE`](./LICENSE).
+应用名称与图标为上游项目的标识；本仓库图标为自行绘制的简易图形，不含上游商标元素（对应审核项 H19）。
