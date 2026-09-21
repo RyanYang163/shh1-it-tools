@@ -29,8 +29,8 @@ LockPersonality=true
 RemoveIPC=true
 SystemCallArchitectures=native
 
-# ---- 可写路径（ProtectSystem=strict 下必须显式放开）----
-ReadWritePaths=/usr/local/shh1-it-tools /var/lib/shh1-it-tools /var/log/shh1-it-tools
+ReadWritePaths=/usr/local/shh1-it-tools /var/lib/shh1-it-tools
+LogsDirectory=shh1-it-tools
 
 LimitNOFILE=65536
 
