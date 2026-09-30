@@ -4,7 +4,7 @@
 |---|---|
 | 应用 ID | `shh1-it-tools` |
 | 形态 | Deb 应用（单包模式） · WebUI 内嵌（iframe） |
-| 版本 | 1.0.007 |
+| 版本 | 1.0.008 |
 | 上游项目 | https://github.com/CorentinTh/it-tools |
 | 上游作者 | Corentin Thomasset（GitHub: [CorentinTh](https://github.com/CorentinTh)） |
 | 上游许可证 | GPL-3.0 |
