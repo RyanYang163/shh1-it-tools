@@ -6,7 +6,7 @@
 > Public URL: <https://github.com/RyanYang163/shh1-it-tools/blob/main/PRIVACY.md>
 
 **Effective date**: 2026-09-30
-**Applies to**: 1.0.010
+**Applies to**: 1.0.011
 **Publisher**: shh (TOS 7 platform integration package)
 **Package**: `shh1-it-tools` (Deb)
 **Upstream project**: IT-Tools — <https://github.com/CorentinTh/it-tools> (author: Corentin Thomasset)

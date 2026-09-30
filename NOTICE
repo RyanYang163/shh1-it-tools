@@ -12,28 +12,26 @@
 | 本仓库内容 | 仅 TOS 平台集成配置与打包脚本 |
 | 许可证全文 | 见同目录 [`LICENSE`](./LICENSE) |
 
-## 本封装对上游产物做过的改动（GPL-3.0 §5(a) 声明）
+## 本封装对上游做过的改动（GPL-3.0 §5(a) 声明）
 
-本封装**未改动上游源代码**，但**对上游已构建好的前端产物做过多处修改**，据此声明：
+本封装**不改动上游源代码仓库**；前端由本封装的 CI **按上游源码构建**（不是取上游已构建产物），
+构建期施加两处平台适配设置，特此声明：
 
 | 项 | 内容 |
 |---|---|
-| 改动对象 | 上游官方镜像 `corentinth/it-tools:2024.10.22-7ca5933` 内 `/usr/share/nginx/html` 的构建产物 |
-| 改动原因 | 该产物是按「部署在站点根 `/`」构建的，而 TOS 把应用挂在反代子路径 `/<app_id>/` 下，所有「站根绝对」的位置都必须适配 |
-| 改动日期 | 2026-09-18 首次（资源路径）；2026-09-30 补齐（SPA router base / Service Worker / manifest） |
-| 可否复现 | 可以。全部改写步骤写在公开的 `.github/workflows/release.yml` 中，且每处改写都带 `grep` 校验——改不到即构建失败，不会静默放过；任何人可对同一镜像重放得到相同结果 |
+| 上游源码 | https://github.com/CorentinTh/it-tools （锁定 tag `v2024.10.22-7ca5933`） |
+| 构建方式 | CI 中 `git clone` 该 tag → `pnpm install` → `BASE_URL=/shh1-it-tools/ pnpm exec vite build` |
+| **改动 1** | 构建期把 `BASE_URL` 设为 `/shh1-it-tools/`（上游 `vite.config.ts` 原生支持 `process.env.BASE_URL`）。不设则全部静态资源、懒加载 chunk 与 worker 脚本都按**站点根 `/`** 解析 → 404 |
+| **改动 2** | 构建前把 `src/router.ts` 的 `createWebHistory` 改为 `createWebHashHistory`（含 import 行）。TOS 平台托管不做 SPA history 回退，history 模式下深层链接与页面刷新会 HTTP 404；hash 模式不依赖服务器回退 |
+| 改动日期 | 2026-09-30（1.0.011 起） |
+| 可否复现 | 可以。全部步骤写在公开的 `.github/workflows/release.yml`，每步都带 `grep` 门禁——改不到即构建失败，不会静默放过 |
 
-逐处列明：
+除上述两处**构建期设置**外，未对上游源代码做任何功能性修改：改的只是资源 base 与路由 history 实现，
+**不改变任何工具的行为**。
 
-| # | 位置 | 改动 | 原因 |
-|---|---|---|---|
-| 1 | `index.html`、`sw.js` | 静态资源引用 `"/assets/…"` → `"./assets/…"`（含 favicon / manifest / sw.js 同类改写） | 资源按子路径解析，否则 404 |
-| 2 | 主 bundle `assets/index-*.js` | 内联字面量 `loadEnv({BASE_URL:"/",…})` → `BASE_URL:"/shh1-it-tools/"` | **SPA router base**。上游 `src/router.ts` 用 `createWebHistory(config.app.baseUrl)`，该值来自构建期 `BASE_URL`（`vite.config.ts`）。不改则入口页与深层链接都会渲染出应用自己的 404 视图 |
-| 3 | 主 bundle | Service Worker 注册 `"/sw.js", {scope:"/"}` → `"./sw.js", {scope:"./"}` | 原值的绝对路径与作用域指向**站点根**（即 TOS 自身的 UI），而非本应用 |
-| 4 | `assets/*.css` | `url(/assets/…)` → `url(./…)` | 字体等资源按子路径解析 |
-| 5 | `manifest.webmanifest` | `scope` / `start_url` / 图标 `src` 由站根绝对改为相对 | PWA 清单同源适配 |
-
-除上述 5 处子路径适配改写外，应用本体的代码、功能与界面**未做任何修改**。
+> **与 1.0.010 及更早版本的区别**：早期版本从上游官方 Docker 镜像提取**已构建好**的前端产物再 `sed` 打补丁。
+> 该做法已证伪——Vite 的 preload helper 在产物里有一份**独立于 `import.meta.env.BASE_URL` 的写死 base**，
+> 补丁修不干净，导致部分工具打不开（平台审核 F7，2026-09-30 批注）。
 
 ## 许可证合规说明
 

@@ -22,9 +22,10 @@ permissions:
 env:
   # 上游版本锁定 —— 升级时改这里，不要用 floating 分支
   UPSTREAM_REPO: "corentinth/it-tools"
+  UPSTREAM_REPO_URL: "https://github.com/CorentinTh/it-tools.git"
   UPSTREAM_TAG: "2024.10.22-7ca5933"
-  # 产物是纯静态前端（true）还是自带二进制（false）
-  BUILD_FROM_UPSTREAM: "dockerimg"
+  # 前端改为「按上游源码构建」（2026-09-30 审核反馈 F7 后从抽镜像产物改为源码构建）
+  BUILD_FROM_UPSTREAM: "source"
 
 jobs:
   release:
@@ -66,67 +67,63 @@ jobs:
           fi
           echo "Release $TAG 尚不存在，可以继续。"
 
-      - name: 从官方镜像提取已构建前端
-        if: env.BUILD_FROM_UPSTREAM == 'dockerimg'
+      - name: 从上游源码构建前端（子路径 base + hash 路由）
+        if: env.BUILD_FROM_UPSTREAM == 'source'
         run: |
           set -euo pipefail
-          # 上游使用 pnpm 而非 npm，且 lockfile 存在 peer 冲突，本地构建不可靠。
-          # 改为直接取官方镜像里已构建好的静态产物（Dockerfile 中
-          # COPY --from=build-stage /app/dist /usr/share/nginx/html）。
-          IMG="${UPSTREAM_REPO}:${UPSTREAM_TAG}"
-          echo "拉取镜像 $IMG"
-          docker pull "$IMG"
-          CID=$(docker create "$IMG")
-          rm -rf "${GITHUB_WORKSPACE}/webui"
-          mkdir -p "${GITHUB_WORKSPACE}/webui"
-          if ! docker cp "$CID:/usr/share/nginx/html/." "${GITHUB_WORKSPACE}/webui/" 2>/dev/null; then
-            echo "::error::镜像内未找到 /usr/share/nginx/html"
-            docker rm -f "$CID" || true
-            exit 1
-          fi
-          docker rm -f "$CID" >/dev/null
-          [ -f "${GITHUB_WORKSPACE}/webui/index.html" ] || { echo "::error::提取结果缺少 index.html"; exit 1; }
-
-          # ⚠️ 平台审核反馈（2026-09-30 撤回 1.0.007）：
-          # 本应用挂在反代子路径 /<app_id>/ 下，而官方镜像是按「站点根 /」构建的。
-          # 「站根绝对」的地方必须逐处适配，否则页面会渲染出应用自己的 404 视图。
+          # ⚠️ 2026-09-30 审核反馈（1.0.009 批注）：
+          #   ① [F7] 官方镜像是按「站点根 /」构建的，产物里 Vite 的 preload helper 自带一份
+          #      写死的 base（`function(e){return "/"+e}`），与之无关地，懒加载 chunk 与样式
+          #      都去请求 /assets/…（站点根）→ 404 → 部分工具打不开。
+          #      给已构建产物打补丁修不干净（routing base / preload helper / worker 是三处独立的
+          #      硬编码），因此改为**按上游源码构建**，用构建期 BASE_URL 让 base 进入全部产物。
+          #   ② [F7] TOS 托管不做 SPA history 回退，深层链接与刷新都会 HTTP 404。
+          #      改用 hash 路由（审核方给的备选方案）。
+          #   ③ [F5] RSA 工具的 worker 脚本路径也随 base 一起由构建期决定。
           APPID="${{ steps.meta.outputs.appid }}"
           BASE="/${APPID}/"
-          cd "${GITHUB_WORKSPACE}/webui"
+          SRC="${RUNNER_TEMP}/upstream-src"
 
-          # (1) 静态资源改相对路径（index.html / sw.js）
-          sed -i 's|="/assets/|="./assets/|g; s|="/favicon|="./favicon|g; s|="/manifest|="./manifest|g; s|="/sw.js|="./sw.js|g' index.html
-          sed -i "s|'/assets/|'./assets/|g" index.html
-          [ -f sw.js ] && sed -i 's|"/assets/|"./assets/|g; s|"/index.html|"./index.html|g' sw.js || true
+          git clone --depth 1 --branch "v${UPSTREAM_TAG}" "${UPSTREAM_REPO_URL}" "$SRC"
+          cd "$SRC"
 
-          # (2) ★ SPA router base —— 1.0.007 被撤回的根因。
-          #     上游 src/router.ts: createWebHistory(config.app.baseUrl)
-          #     vite.config.ts:      const baseUrl = process.env.BASE_URL ?? '/'
-          #     官方镜像在默认 '/' 下构建，产物里是内联字面量 loadEnv({BASE_URL:"/",...})，直接改掉。
-          MAIN="$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' index.html | head -1)"
-          [ -n "$MAIN" ] && [ -f "$MAIN" ] || { echo "::error::未在主 bundle 定位到 index-*.js"; exit 1; }
-          grep -q 'BASE_URL:"/"' "$MAIN" || { echo "::error::$MAIN 中找不到 BASE_URL:\"/\" 内联字面量 —— 上游产物结构已变，必须重新确认适配方式，不得静默放过"; exit 1; }
-          sed -i "s|BASE_URL:\"/\"|BASE_URL:\"${BASE}\"|g" "$MAIN"
-          grep -q "BASE_URL:\"${BASE}\"" "$MAIN" || { echo "::error::SPA router base 改写失败"; exit 1; }
-          echo "  [OK] SPA router base -> ${BASE}"
+          # 上游 build 脚本带 vue-tsc 全量类型检查（与产物无关且慢），这里直接调 vite
+          npm i -g pnpm@9.11.0 >/dev/null 2>&1
+          pnpm install --frozen-lockfile=false --reporter=silent
 
-          # (3) Service Worker：绝对 "/sw.js" + scope "/" 会打到 TOS 站点根，改相对（相对页面 /<app_id>/ 解析）
-          sed -i 's|"/sw\.js"|"./sw.js"|g; s|{scope:"/",type:"classic"}|{scope:"./",type:"classic"}|g' "$MAIN"
-          grep -q '"./sw.js"' "$MAIN" || { echo "::error::Service Worker 路径改写失败"; exit 1; }
-          echo "  [OK] Service Worker 路径与作用域 -> 子路径"
+          # (1) router 改 hash 模式 —— TOS 托管无 history 回退
+          sed -i "s/import { createRouter, createWebHistory } from 'vue-router';/import { createRouter, createWebHashHistory } from 'vue-router';/" src/router.ts
+          sed -i "s/createWebHistory(config\.app\.baseUrl)/createWebHashHistory(config.app.baseUrl)/" src/router.ts
+          grep -q 'createWebHashHistory(config.app.baseUrl)' src/router.ts             || { echo "::error::router 改 hash 模式失败 —— 上游 src/router.ts 结构已变"; exit 1; }
 
-          # (4) CSS 里的站根绝对字体路径（相对 CSS 文件本身解析）
-          for f in assets/*.css; do [ -f "$f" ] && sed -i 's|url(/assets/|url(./|g' "$f"; done
+          # (2) 带子路径 base 构建
+          BASE_URL="${BASE}" pnpm exec vite build
 
-          # (5) manifest：scope / start_url / 图标改相对
-          if [ -f manifest.webmanifest ]; then
-            sed -i 's|"start_url":"/?|"start_url":"./?|; s|"scope":"/"|"scope":"./"|; s|"src":"/|"src":"./|g' manifest.webmanifest
-          fi
+          # (3) 门禁：产物里不得出现「未带应用前缀 /<app_id>/」的站根绝对引用。
+          #     ⚠️ 注意区分：带 BASE_URL 构建后 index.html 里是「带前缀的绝对路径」
+          #     （src="/shh1-it-tools/assets/…"），那是对的；要拦的是**不经过应用前缀**
+          #     就直接打到站点根的引用 —— 那正是 1.0.009 被判 F7 的成因。
+          #     每处门禁都必须能拦住人为改坏的产物，否则等于没有（已实测双向验证）。
+          check_prefix() {
+            local leftover
+            leftover=$(printf '%s' "$2" | grep -v "/${APPID}/" || true)
+            if [ -n "$leftover" ]; then
+              echo "::error::$1 存在未带 /${APPID}/ 前缀的站根绝对引用："
+              echo "$leftover" | head -5
+              exit 1
+            fi
+          }
+          check_prefix "index.html" "$(grep -oE '(src|href)="/[^"]*"' dist/index.html || true)"
+          check_prefix "CSS"        "$(grep -rhoE 'url\(/[^)]*\)' dist/assets/*.css || true)"
+          check_prefix "JS"         "$(grep -rhoE '"/assets/[^"]*"' dist/assets/*.js || true)"
 
-          # (6) 兜底门禁：产物里不得再有站根绝对引用（"//host" 与 "https://…" 不受影响）
-          if grep -nE '(src|href)="/[^/]' index.html; then echo "::error::index.html 仍有站根绝对引用"; exit 1; fi
-          if grep -nE 'url\(/[^/]' assets/*.css; then echo "::error::CSS 仍有站根绝对引用"; exit 1; fi
+          # preload helper 的 base 必须是应用前缀（1.0.009 的根因就出在这行）
+          NEEDLE='return"'"${BASE}"'"+'
+          grep -qF "$NEEDLE" dist/assets/index-*.js             || { echo "::error::Vite preload helper 的 base 不是 ${BASE} —— 懒加载 chunk 会打到站点根"; exit 1; }
+          echo "  [OK] 源码构建完成：base=${BASE}，router=hash，产物无站根绝对引用"
 
+          rm -rf "${GITHUB_WORKSPACE}/webui"
+          cp -r dist "${GITHUB_WORKSPACE}/webui"
           echo "前端产物已就位：$(du -sh "${GITHUB_WORKSPACE}/webui" | cut -f1)"
 
       - name: 构建 Deb 包
