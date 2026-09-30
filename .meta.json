@@ -1,9 +1,12 @@
 {
   "name": "IT-Tools",
   "license": "GPL-3.0",
+  "author": "Corentin Thomasset (CorentinTh)",
+  "author_url": "https://github.com/CorentinTh",
   "port": 18801,
   "license_url": "https://raw.githubusercontent.com/CorentinTh/it-tools/main/LICENSE",
   "en": "A collection of handy online tools for developers: JSON formatting, Base64, UUID, hashes, timestamps and more.",
   "features": "- 80+ developer utilities in one page\n- Runs fully in the browser; no server-side processing\n- No database, no user accounts, no data collection",
-  "date": "2026-09-20"
+  "date": "2026-09-20",
+  "modifications": "**本封装未改动上游源代码**，但**对上游已构建好的前端产物做过一处修改**，据此声明：\n\n| 项 | 内容 |\n|---|---|\n| 改动对象 | 上游官方镜像 `corentinth/it-tools:2024.10.22-7ca5933` 内 `/usr/share/nginx/html` 的构建产物 |\n| 改动内容 | 资源引用由绝对路径改为相对路径：`index.html`、`sw.js` 中的 `\"/assets/…\"` → `\"./assets/…\"`（含 favicon / manifest / sw.js 同类改写） |\n| 改动原因 | 适配 TOS 反代子路径 `/<app_id>/`，否则静态资源 404 白屏（对应审核项 F7） |\n| 改动日期 | 2026-09-18（首次构建起） |\n| 可否复现 | 可以。改写步骤全部写在公开脚本 `.github/workflows/release.yml` 中，任何人可对同一镜像重放得到相同结果 |\n\n除上述路径改写外，应用本体的代码、功能与界面**未做任何修改**。"
 }

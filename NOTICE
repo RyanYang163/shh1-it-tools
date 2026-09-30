@@ -1,25 +1,42 @@
 # 署名与来源声明 / Attribution Notice
 
-本仓库是 **TOS 7 平台集成封装**，不是上游项目的分支，也不修改上游源代码。
+本仓库是 **TOS 7 平台集成封装**，不是上游项目的分支。
 
 | 项 | 值 |
 |---|---|
 | 上游项目 | IT-Tools |
-| 上游源码 | https://github.com/CorentinTh/it-tools |
-| 版权归属 | 上游项目贡献者（见上游仓库） |
-| 上游许可证 | **GPL-3.0** |
+| 上游作者 | **Corentin Thomasset**（GitHub: [CorentinTh](https://github.com/CorentinTh)，主页 <https://corentin.tech>） |
+| 上游源码 | https://github.com/CorentinTh/it-tools （锁定 tag `2024.10.22-7ca5933`） |
+| 版权归属 | © Corentin Thomasset 及 IT-Tools 项目贡献者 |
+| 上游许可证 | **GPL-3.0**（GNU General Public License v3.0） |
 | 本仓库内容 | 仅 TOS 平台集成配置与打包脚本 |
 | 许可证全文 | 见同目录 [`LICENSE`](./LICENSE) |
 
+## 本封装对上游产物做过的改动（GPL-3.0 §5(a) 声明）
+
+本封装**未改动上游源代码**，但**对上游已构建好的前端产物做过一处修改**，据此声明：
+
+| 项 | 内容 |
+|---|---|
+| 改动对象 | 上游官方镜像 `corentinth/it-tools:2024.10.22-7ca5933` 内 `/usr/share/nginx/html` 的构建产物 |
+| 改动内容 | 资源引用由绝对路径改为相对路径：`index.html`、`sw.js` 中的 `"/assets/…"` → `"./assets/…"`（含 `favicon` / `manifest` / `sw.js` 同类改写） |
+| 改动原因 | 适配 TOS 反代子路径 `/<app_id>/`，否则静态资源 404 白屏（对应审核项 F7） |
+| 改动日期 | 2026-09-18（首次构建起） |
+| 可否复现 | 可以。改写步骤全部写在公开脚本 `.github/workflows/release.yml` 中，任何人可对同一镜像重放得到相同结果 |
+
+除上述路径改写外，应用本体的代码、功能与界面**未做任何修改**。
+
 ## 许可证合规说明
 
-1. 本封装**不修改上游源代码**，仅提供平台接入所需的配置与打包脚本
+1. 本封装的打包脚本与平台接入配置，与上游同款以 **GPL-3.0** 发布
 2. 分发时保留上游许可证全文（`LICENSE`）与本署名声明
-3. 上游为 copyleft 许可证（GPL / AGPL / LGPL）时，本仓库同样公开，
-   并提供获取上游完整源码的地址：https://github.com/CorentinTh/it-tools
-4. 应用本体（镜像 / 二进制）由上游发布，未做二次修改
+3. 上游为 copyleft 许可证，本仓库同样公开，并提供获取上游完整源码的地址
+4. 对应源码（Corresponding Source）：
+   - 上游源码：<https://github.com/CorentinTh/it-tools>（tag `2024.10.22-7ca5933`）
+   - 本封装脚本：<https://github.com/RyanYang163/shh1-it-tools>
 
 ## 商标说明
 
-应用名称仅用于指明所封装的上游软件。本仓库内的图标为自行绘制的简易图形，
+应用名称「IT-Tools」仅用于指明所封装的上游软件，属指示性使用。
+本仓库内的图标为自行绘制的简易图形（蓝底圆角方块 + "IT" 字样），
 未使用上游项目的商标、Logo 或其他受保护的视觉标识。
