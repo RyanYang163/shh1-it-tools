@@ -4,7 +4,7 @@
 |---|---|
 | 应用 ID | `shh1-it-tools` |
 | 形态 | Deb 应用（单包模式） · WebUI 内嵌（iframe） |
-| 版本 | 1.0.008 |
+| 版本 | 1.0.009 |
 | 上游项目 | https://github.com/CorentinTh/it-tools |
 | 上游作者 | Corentin Thomasset（GitHub: [CorentinTh](https://github.com/CorentinTh)） |
 | 上游许可证 | GPL-3.0 |
@@ -26,8 +26,11 @@
 ## 提交前必办事项
 
 - 上游为纯静态 SPA。仓库里的 `webui/` 只是占位页；**真正的产物由 CI 在发布时**从上游官方镜像
-  `corentinth/it-tools:2024.10.22-7ca5933` 的 `/usr/share/nginx/html` 提取，
-  再把资源绝对路径改写成相对路径，最后才由 `build.sh` 打包成 `webui.bz2`（见 `.github/workflows/release.yml`）。
+  `corentinth/it-tools:2024.10.22-7ca5933` 的 `/usr/share/nginx/html` 提取，再由 `build.sh` 打包成 `webui.bz2`。
+- ⚠️ **该镜像按「站点根 `/`」构建，而本应用挂在 `/shh1-it-tools/` 子路径下**，CI 会做 5 处适配改写
+  （资源相对路径、**SPA router base**、Service Worker 路径与作用域、CSS 字体、manifest），
+  每处都带 `grep` 校验，改不到即构建失败。**全部改动逐条列在 [`NOTICE`](./NOTICE)**（GPL-3.0 §5(a) 声明）。
+  详见 `.github/workflows/release.yml`。
 - 本应用无数据库、无后端，是 9 个应用中最容易过审的一个。
 - [ ] 真机安装、启动、停止、卸载残留四项实测
 - [ ] 首屏加载 ≤ 5 秒（指引 H10）

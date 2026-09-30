@@ -87,15 +87,46 @@ jobs:
           docker rm -f "$CID" >/dev/null
           [ -f "${GITHUB_WORKSPACE}/webui/index.html" ] || { echo "::error::提取结果缺少 index.html"; exit 1; }
 
-          # ⚠️ 审核项 F7：Vite 默认输出绝对路径 /assets/…，
-          # 在反代前缀 /<app_id>/ 下会 404。改为相对路径。
+          # ⚠️ 平台审核反馈（2026-09-30 撤回 1.0.007）：
+          # 本应用挂在反代子路径 /<app_id>/ 下，而官方镜像是按「站点根 /」构建的。
+          # 「站根绝对」的地方必须逐处适配，否则页面会渲染出应用自己的 404 视图。
+          APPID="${{ steps.meta.outputs.appid }}"
+          BASE="/${APPID}/"
           cd "${GITHUB_WORKSPACE}/webui"
+
+          # (1) 静态资源改相对路径（index.html / sw.js）
           sed -i 's|="/assets/|="./assets/|g; s|="/favicon|="./favicon|g; s|="/manifest|="./manifest|g; s|="/sw.js|="./sw.js|g' index.html
           sed -i "s|'/assets/|'./assets/|g" index.html
-          # service worker 里也可能有绝对路径
           [ -f sw.js ] && sed -i 's|"/assets/|"./assets/|g; s|"/index.html|"./index.html|g' sw.js || true
-          echo "  已改为相对路径，index.html 片段："
-          grep -oE '(src|href)="[^"]*"' index.html | head -6 || true
+
+          # (2) ★ SPA router base —— 1.0.007 被撤回的根因。
+          #     上游 src/router.ts: createWebHistory(config.app.baseUrl)
+          #     vite.config.ts:      const baseUrl = process.env.BASE_URL ?? '/'
+          #     官方镜像在默认 '/' 下构建，产物里是内联字面量 loadEnv({BASE_URL:"/",...})，直接改掉。
+          MAIN="$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' index.html | head -1)"
+          [ -n "$MAIN" ] && [ -f "$MAIN" ] || { echo "::error::未在主 bundle 定位到 index-*.js"; exit 1; }
+          grep -q 'BASE_URL:"/"' "$MAIN" || { echo "::error::$MAIN 中找不到 BASE_URL:\"/\" 内联字面量 —— 上游产物结构已变，必须重新确认适配方式，不得静默放过"; exit 1; }
+          sed -i "s|BASE_URL:\"/\"|BASE_URL:\"${BASE}\"|g" "$MAIN"
+          grep -q "BASE_URL:\"${BASE}\"" "$MAIN" || { echo "::error::SPA router base 改写失败"; exit 1; }
+          echo "  [OK] SPA router base -> ${BASE}"
+
+          # (3) Service Worker：绝对 "/sw.js" + scope "/" 会打到 TOS 站点根，改相对（相对页面 /<app_id>/ 解析）
+          sed -i 's|"/sw\.js"|"./sw.js"|g; s|{scope:"/",type:"classic"}|{scope:"./",type:"classic"}|g' "$MAIN"
+          grep -q '"./sw.js"' "$MAIN" || { echo "::error::Service Worker 路径改写失败"; exit 1; }
+          echo "  [OK] Service Worker 路径与作用域 -> 子路径"
+
+          # (4) CSS 里的站根绝对字体路径（相对 CSS 文件本身解析）
+          for f in assets/*.css; do [ -f "$f" ] && sed -i 's|url(/assets/|url(./|g' "$f"; done
+
+          # (5) manifest：scope / start_url / 图标改相对
+          if [ -f manifest.webmanifest ]; then
+            sed -i 's|"start_url":"/?|"start_url":"./?|; s|"scope":"/"|"scope":"./"|; s|"src":"/|"src":"./|g' manifest.webmanifest
+          fi
+
+          # (6) 兜底门禁：产物里不得再有站根绝对引用（"//host" 与 "https://…" 不受影响）
+          if grep -nE '(src|href)="/[^/]' index.html; then echo "::error::index.html 仍有站根绝对引用"; exit 1; fi
+          if grep -nE 'url\(/[^/]' assets/*.css; then echo "::error::CSS 仍有站根绝对引用"; exit 1; fi
+
           echo "前端产物已就位：$(du -sh "${GITHUB_WORKSPACE}/webui" | cut -f1)"
 
       - name: 构建 Deb 包
